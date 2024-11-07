@@ -1,32 +1,47 @@
 #include "encryption/RSA.h"
+#include "encryption/Blowfish.h"  // Подключаем Blowfish
 #include <iostream>
 #include <string>
 #include <windows.h> // для установки кодировки
 
-
 int main() {
+    // Настройки консоли для поддержки кириллицы
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
     setlocale(LC_ALL, "");
 
+    // ---------- Тестирование RSA ----------
     std::string publicKeyFile = "public.pem";
     std::string privateKeyFile = "private.pem";
 
-    // Генерация ключей
+    // Генерация RSA-ключей
     generateRSAKey(publicKeyFile, privateKeyFile);
-    std::cout << "Ключи сгенерированы и сохранены в файлы: " << publicKeyFile << " и " << privateKeyFile << std::endl;
+    std::cout << "RSA ключи сгенерированы и сохранены в файлы: " << publicKeyFile << " и " << privateKeyFile << std::endl;
 
-    std::string message = "Привет, RSA шифрование!";
+    std::string rsaMessage = "Привет, RSA шифрование!";
+    // Шифрование RSA
+    std::string encryptedRSA = rsaEncrypt(rsaMessage, publicKeyFile);
+    std::string encodedEncryptedRSA = base64Encode(encryptedRSA);
+    std::cout << "RSA зашифрованное сообщение (base64): " << encodedEncryptedRSA << std::endl;
 
-    // Шифрование
-    std::string encryptedMessage = rsaEncrypt(message, publicKeyFile);
-    std::string encodedEncryptedMessage = base64Encode(encryptedMessage);
-    std::cout << "Зашифрованное сообщение (base64): " << encodedEncryptedMessage << std::endl;
+    // Декодирование и дешифровка RSA
+    std::string decodedEncryptedRSA = base64Decode(encodedEncryptedRSA);
+    std::string decryptedRSA = rsaDecrypt(decodedEncryptedRSA, privateKeyFile);
+    std::cout << "RSA расшифрованное сообщение: " << decryptedRSA << std::endl;
 
-    // Декодирование и дешифровка
-    std::string decodedEncryptedMessage = base64Decode(encodedEncryptedMessage);
-    std::string decryptedMessage = rsaDecrypt(decodedEncryptedMessage, privateKeyFile);
-    std::cout << "Расшифрованное сообщение: " << decryptedMessage << std::endl;
+    // ---------- Тестирование Blowfish ----------
+    Blowfish blowfish("my_secret_key");  // Инициализация Blowfish с ключом
+    std::string blowfishMessage = "Привет, Blowfish шифрование!";
+
+    // Шифрование Blowfish
+    std::string encryptedBlowfish = blowfish.encrypt(blowfishMessage);
+    std::string encodedEncryptedBlowfish = base64Encode(encryptedBlowfish);
+    std::cout << "Blowfish зашифрованное сообщение (base64): " << encodedEncryptedBlowfish << std::endl;
+
+    // Декодирование и дешифровка Blowfish
+    std::string decodedEncryptedBlowfish = base64Decode(encodedEncryptedBlowfish);
+    std::string decryptedBlowfish = blowfish.decrypt(decodedEncryptedBlowfish);
+    std::cout << "Blowfish расшифрованное сообщение: " << decryptedBlowfish << std::endl;
 
     return 0;
 }
