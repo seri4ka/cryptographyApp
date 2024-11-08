@@ -7,7 +7,7 @@ find_package(OpenSSL REQUIRED)
 
 include_directories(${OPENSSL_INCLUDE_DIR})
 
-add_executable(CryptographyApp src/main.cpp src/encryption/RSA.cpp src/encryption/Blowfish.cpp src/applink.c)
+add_executable(CryptographyApp src/main.cpp src/encryption/RSA.cpp src/encryption/Blowfish.cpp src/encryption/AES.cpp src/applink.c)
 
 
 target_link_libraries(CryptographyApp ${OPENSSL_LIBRARIES})
