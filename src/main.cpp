@@ -44,12 +44,10 @@ int main() {
     auto aesKey = generateAESKey();
     auto aesIV = generateIV();
 
-    // Шифрование AES
     auto aesEncrypted = aesEncrypt(aesMessage, aesKey, aesIV);
     std::string aesEncodedEncryptedMessage = base64Encode(std::string(aesEncrypted.begin(), aesEncrypted.end()));
     std::cout << "AES зашифрованное сообщение (base64): " << aesEncodedEncryptedMessage << std::endl;
 
-    // Декодирование и дешифрование AES
     auto aesDecodedEncryptedMessage = base64Decode(aesEncodedEncryptedMessage);
     std::vector<unsigned char> aesEncryptedData(aesDecodedEncryptedMessage.begin(), aesDecodedEncryptedMessage.end());
     std::string aesDecryptedMessage = aesDecrypt(aesEncryptedData, aesKey, aesIV);
@@ -57,5 +55,3 @@ int main() {
 
     return 0;
 }
-
-
