@@ -4,6 +4,8 @@ out/
 
 # Игнорировать конфигурационные файлы IDE
 .vs/
+.idea/
+*.iml
 *.vcxproj*
 *.vcxproj.user
 *.vcxproj.filters
@@ -19,6 +21,9 @@ include/
 # Игнорировать файлы CMake, если они генерируются при сборке
 CMakeFiles/
 CMakeCache.txt
+*.cmake
+CTestTestfile.cmake
+install_manifest.txt
 cmake_install.cmake
 Makefile
 
@@ -29,9 +34,13 @@ Makefile
 *.obj
 *.pdb
 *.exp
+*.pyc
+*.pyo
 
 # Игнорировать ключи и другие конфиденциальные данные (если они есть)
 *.pem
+*.key
+*.cert
 
 # Игнорировать pycache
 **/__pycache__/

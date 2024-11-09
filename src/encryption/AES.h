@@ -1,19 +1,13 @@
 #ifndef AES_H
 #define AES_H
 
-#include <vector>
-#include <string>
+#include <stddef.h>  // Для определения типа size_t
 
-#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT
-#endif
-
-EXPORT std::vector<unsigned char> generateAESKey();
-EXPORT std::vector<unsigned char> generateIV();
-EXPORT std::vector<unsigned char> aesEncrypt(const std::string& plaintext, const std::vector<unsigned char>& key, const std::vector<unsigned char>& iv);
-EXPORT std::string aesDecrypt(const std::vector<unsigned char>& ciphertext, const std::vector<unsigned char>& key, const std::vector<unsigned char>& iv);
+extern "C" {
+    __declspec(dllexport) void generateAESKey(unsigned char* key, size_t keySize);
+    __declspec(dllexport) void generateIV(unsigned char* iv, size_t ivSize);
+    __declspec(dllexport) int aesEncrypt(const char* plaintext, size_t plaintextLen, const unsigned char* key, const unsigned char* iv, unsigned char* encrypted);
+    __declspec(dllexport) int aesDecrypt(const unsigned char* ciphertext, size_t ciphertextLen, const unsigned char* key, const unsigned char* iv, char* decrypted);
+}
 
 #endif // AES_H
-

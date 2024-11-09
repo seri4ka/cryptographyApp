@@ -1,61 +1,49 @@
 #include "Blowfish.h"
 #include <openssl/blowfish.h>
 #include <openssl/rand.h>
-#include <openssl/evp.h>
-#include <iostream>
-#include <vector>
 #include <stdexcept>
+#include <cstring>
 
-Blowfish::Blowfish(const std::string& key) {
-    // Устанавливаем ключ для Blowfish (до 16 байт)
-    size_t keyLength = key.size() > sizeof(key_) ? sizeof(key_) : key.size();
-    memcpy(key_, key.data(), keyLength);
-    if (keyLength < sizeof(key_)) {
-        memset(key_ + keyLength, 0, sizeof(key_) - keyLength);
+static BF_KEY bfKey;  // Храним ключ для использования в функциях шифрования и дешифрования
+
+extern "C" {
+    __declspec(dllexport) void blowfishInit(const unsigned char* key, size_t keySize) {
+        if (keySize > 16) {
+            throw std::runtime_error("Длина ключа не должна превышать 16 байт для Blowfish");
+        }
+        BF_set_key(&bfKey, static_cast<int>(keySize), key);
+    }
+
+    __declspec(dllexport) int blowfishEncrypt(const unsigned char* plaintext, size_t plaintextLen, unsigned char* encrypted) {
+        if (!plaintext || !encrypted) {
+            return -1; // Ошибка, если указатели неверны
+        }
+
+        unsigned char iv[BF_BLOCK];
+        if (!RAND_bytes(iv, BF_BLOCK)) {
+            return -1;  // Ошибка генерации IV
+        }
+        memcpy(encrypted, iv, BF_BLOCK);  // Копируем IV в начало зашифрованного текста
+
+        int num = 0;
+        BF_cfb64_encrypt(plaintext, encrypted + BF_BLOCK, plaintextLen, &bfKey, iv, &num, BF_ENCRYPT);
+
+        return static_cast<int>(plaintextLen + BF_BLOCK);  // Длина зашифрованных данных
+    }
+
+    __declspec(dllexport) int blowfishDecrypt(const unsigned char* ciphertext, size_t ciphertextLen, unsigned char* decrypted) {
+        if (ciphertextLen <= BF_BLOCK) {
+            return -1; // Ошибка, если зашифрованный текст слишком короткий для содержимого
+        }
+
+        unsigned char iv[BF_BLOCK];
+        memcpy(iv, ciphertext, BF_BLOCK);  // Извлекаем IV из зашифрованного текста
+
+        int num = 0;
+        BF_cfb64_encrypt(ciphertext + BF_BLOCK, decrypted, ciphertextLen - BF_BLOCK, &bfKey, iv, &num, BF_DECRYPT);
+
+        return static_cast<int>(ciphertextLen - BF_BLOCK);  // Длина расшифрованных данных
     }
 }
 
-std::string Blowfish::encrypt(const std::string& plaintext) {
-    BF_KEY bfKey;
-    BF_set_key(&bfKey, sizeof(key_), key_);
-
-    // Инициализируем IV случайными данными
-    unsigned char iv[BF_BLOCK];
-    if (!RAND_bytes(iv, BF_BLOCK)) {
-        throw std::runtime_error("Не удалось сгенерировать случайный IV");
-    }
-
-    // Создаем вектор для шифрованного текста
-    std::vector<unsigned char> encrypted(BF_BLOCK + plaintext.size());
-    std::copy(iv, iv + BF_BLOCK, encrypted.begin()); // Сохраняем IV в начале зашифрованного текста
-
-    // Шифруем
-    int num = 0;
-    BF_cfb64_encrypt(reinterpret_cast<const unsigned char*>(plaintext.data()),
-        encrypted.data() + BF_BLOCK, plaintext.size(), &bfKey, iv, &num, BF_ENCRYPT);
-
-    return std::string(encrypted.begin(), encrypted.end());
-}
-
-std::string Blowfish::decrypt(const std::string& ciphertext) {
-    BF_KEY bfKey;
-    BF_set_key(&bfKey, sizeof(key_), key_);
-
-    if (ciphertext.size() < BF_BLOCK) {
-        throw std::runtime_error("Неверный зашифрованный текст");
-    }
-
-    // Извлекаем IV из зашифрованного текста
-    unsigned char iv[BF_BLOCK];
-    std::copy(ciphertext.begin(), ciphertext.begin() + BF_BLOCK, iv);
-
-    // Создаем вектор для расшифрованного текста
-    std::vector<unsigned char> decrypted(ciphertext.size() - BF_BLOCK);
-
-    int num = 0;
-    BF_cfb64_encrypt(reinterpret_cast<const unsigned char*>(ciphertext.data() + BF_BLOCK),
-        decrypted.data(), ciphertext.size() - BF_BLOCK, &bfKey, iv, &num, BF_DECRYPT);
-
-    return std::string(decrypted.begin(), decrypted.end());
-}
 

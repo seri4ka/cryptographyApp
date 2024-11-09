@@ -1,59 +1,52 @@
+#include "AES.h"
 #include <openssl/aes.h>
 #include <openssl/rand.h>
-#include <vector>
-#include <stdexcept>
+#include <cstring>
 
-std::vector<unsigned char> generateAESKey() {
-    std::vector<unsigned char> key(AES_BLOCK_SIZE); // Используем 128-битный ключ
-    if (!RAND_bytes(key.data(), AES_BLOCK_SIZE)) {
-        throw std::runtime_error("Ошибка генерации AES ключа.");
+void generateAESKey(unsigned char* key, size_t keySize) {
+    if (keySize >= AES_BLOCK_SIZE) {
+        RAND_bytes(key, AES_BLOCK_SIZE);
     }
-    return key;
 }
 
-std::vector<unsigned char> generateIV() {
-    std::vector<unsigned char> iv(AES_BLOCK_SIZE);
-    if (!RAND_bytes(iv.data(), AES_BLOCK_SIZE)) {
-        throw std::runtime_error("Ошибка генерации IV.");
+void generateIV(unsigned char* iv, size_t ivSize) {
+    if (ivSize >= AES_BLOCK_SIZE) {
+        RAND_bytes(iv, AES_BLOCK_SIZE);
     }
-    return iv;
 }
 
-std::vector<unsigned char> aesEncrypt(const std::string& plaintext, const std::vector<unsigned char>& key, const std::vector<unsigned char>& iv) {
+int aesEncrypt(const char* plaintext, size_t plaintextLen, const unsigned char* key, const unsigned char* iv, unsigned char* encrypted) {
     AES_KEY encryptKey;
-    if (AES_set_encrypt_key(key.data(), 128, &encryptKey) < 0) {
-        throw std::runtime_error("Ошибка установки AES ключа для шифрования.");
+    unsigned char ivCopy[AES_BLOCK_SIZE];
+    memcpy(ivCopy, iv, AES_BLOCK_SIZE);
+
+    if (AES_set_encrypt_key(key, 128, &encryptKey) < 0) {
+        return -1;  // Ошибка установки ключа
     }
 
-    int encryptedSize = ((plaintext.size() / AES_BLOCK_SIZE) + 1) * AES_BLOCK_SIZE;
-    std::vector<unsigned char> encrypted(encryptedSize);
-
-    unsigned char ivCopy[AES_BLOCK_SIZE];
-    memcpy(ivCopy, iv.data(), AES_BLOCK_SIZE);
-
-    AES_cbc_encrypt(reinterpret_cast<const unsigned char*>(plaintext.data()), encrypted.data(),
-        plaintext.size(), &encryptKey, ivCopy, AES_ENCRYPT);
-
-    return encrypted;
+    // Шифруем данные
+    AES_cbc_encrypt(reinterpret_cast<const unsigned char*>(plaintext), encrypted, plaintextLen, &encryptKey, ivCopy, AES_ENCRYPT);
+    return ((plaintextLen / AES_BLOCK_SIZE) + 1) * AES_BLOCK_SIZE; // Возвращаем размер зашифрованного текста
 }
 
-std::string aesDecrypt(const std::vector<unsigned char>& ciphertext, const std::vector<unsigned char>& key, const std::vector<unsigned char>& iv) {
+int aesDecrypt(const unsigned char* ciphertext, size_t ciphertextLen, const unsigned char* key, const unsigned char* iv, char* decrypted) {
     AES_KEY decryptKey;
-    if (AES_set_decrypt_key(key.data(), 128, &decryptKey) < 0) {
-        throw std::runtime_error("Ошибка установки AES ключа для дешифрования.");
-    }
-
-    std::vector<unsigned char> decrypted(ciphertext.size());
     unsigned char ivCopy[AES_BLOCK_SIZE];
-    memcpy(ivCopy, iv.data(), AES_BLOCK_SIZE);
+    memcpy(ivCopy, iv, AES_BLOCK_SIZE);
 
-    AES_cbc_encrypt(ciphertext.data(), decrypted.data(), ciphertext.size(), &decryptKey, ivCopy, AES_DECRYPT);
-
-    int paddingLength = decrypted.back();
-    if (paddingLength <= AES_BLOCK_SIZE) {
-        decrypted.resize(decrypted.size() - paddingLength);
+    if (AES_set_decrypt_key(key, 128, &decryptKey) < 0) {
+        return -1;  // Ошибка установки ключа
     }
 
-    return std::string(decrypted.begin(), decrypted.end());
+    AES_cbc_encrypt(ciphertext, reinterpret_cast<unsigned char*>(decrypted), ciphertextLen, &decryptKey, ivCopy, AES_DECRYPT);
+
+    // Убираем padding, если он был добавлен
+    int paddingLength = decrypted[ciphertextLen - 1];
+    if (paddingLength <= AES_BLOCK_SIZE) {
+        decrypted[ciphertextLen - paddingLength] = '\0';
+    }
+
+    return ciphertextLen - paddingLength;  // Возвращаем фактический размер расшифрованного текста
 }
+
 

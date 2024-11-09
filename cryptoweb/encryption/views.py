@@ -1,23 +1,29 @@
-from django.shortcuts import render
-from .forms import EncryptDecryptForm
+from django.http import JsonResponse
 from .crypto import Crypto
 
 crypto = Crypto()
 
-def encrypt_decrypt_view(request):
-    form = EncryptDecryptForm()
-    result = None
-    if request.method == 'POST':
-        form = EncryptDecryptForm(request.POST)
-        if form.is_valid():
-            message = form.cleaned_data['message']
-            algorithm = form.cleaned_data['algorithm']
-            action = form.cleaned_data['action']
-            if algorithm == 'RSA':
-                if action == 'encrypt':
-                    result = crypto.encrypt_message_rsa(message, 'path_to_public_key')
-                elif action == 'decrypt':
-                    result = crypto.decrypt_message_rsa(message, 'path_to_private_key')
-            # Аналогично для других алгоритмов
-    return render(request, 'encryption/encrypt_decrypt.html', {'form': form, 'result': result})
+def encrypt_message(request):
+    plaintext = request.GET.get('message', 'Hello, AES encryption!')
+    key = crypto.generate_aes_key()
+    iv = crypto.generate_iv()
+    encrypted_message = crypto.aes_encrypt(plaintext, key, iv)
+    return JsonResponse({
+        'encrypted': encrypted_message.hex(),
+        'key': key.hex(),
+        'iv': iv.hex()
+    })
+
+def decrypt_message(request):
+    encrypted_hex = request.GET.get('encrypted')
+    if encrypted_hex is None:
+        return JsonResponse({'error': 'Encrypted message not provided'}, status=400)
+    
+    encrypted_message = bytes.fromhex(encrypted_hex)
+    key = bytes.fromhex(request.GET.get('key'))
+    iv = bytes.fromhex(request.GET.get('iv'))
+    
+    # Остальная часть кода для расшифровки
+    decrypted_message = crypto.aes_decrypt(encrypted_message, key, iv)
+    return JsonResponse({'decrypted': decrypted_message})
 
