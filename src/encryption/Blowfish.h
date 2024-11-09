@@ -3,7 +3,13 @@
 
 #include <string>
 
-class Blowfish {
+#ifdef _WIN32
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT
+#endif
+
+class EXPORT Blowfish {
 public:
     Blowfish(const std::string& key);
     std::string encrypt(const std::string& plaintext);
@@ -14,3 +20,4 @@ private:
 };
 
 #endif // BLOWFISH_H
+

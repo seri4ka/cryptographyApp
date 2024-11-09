@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Шифрование и дешифрование</title>
+</head>
+<body>
+    <h1>Шифрование и дешифрование</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Выполнить</button>
+    </form>
+
+    {% if result %}
+        <h2>Результат:</h2>
+        <p>{{ result }}</p>
+    {% endif %}
+</body>
+</html>
